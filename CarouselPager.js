@@ -1,11 +1,6 @@
-import React, { Component } from 'react';
-import {
-  View,
-  PanResponder,
-  Animated,
-  StyleSheet
-} from 'react-native';
-import PropTypes from 'prop-types';
+import React, { Component } from "react";
+import { View, PanResponder, Animated, StyleSheet } from "react-native";
+import PropTypes from "prop-types";
 
 export default class CarouselPager extends Component {
   static propTypes = {
@@ -20,7 +15,7 @@ export default class CarouselPager extends Component {
     onPageChange: PropTypes.func,
     deltaDelay: PropTypes.number,
     children: PropTypes.array.isRequired
-  }
+  };
 
   static defaultProps = {
     initialPage: 0,
@@ -32,12 +27,14 @@ export default class CarouselPager extends Component {
     vertical: false,
     deltaDelay: 0,
     onPageChange: () => {},
-  }
+    onPullDown: () => {},
+    onPullUp: () => {}
+  };
 
   state = {
     width: 0,
     height: 0
-  }
+  };
 
   _getPosForPage(pageNb) {
     return -pageNb * this._boxSizeInterval;
@@ -68,7 +65,7 @@ export default class CarouselPager extends Component {
   _runAfterMeasurements(width, height) {
     // Set box and box interval size
     let length = this.props.vertical ? height : width;
-    this._boxSize = length - (2 * this.props.containerPadding);
+    this._boxSize = length - 2 * this.props.containerPadding;
     this._boxSizeInterval = this._boxSize + this.props.pageSpacing;
 
     // Get initial page
@@ -85,8 +82,14 @@ export default class CarouselPager extends Component {
     let viewsScale = [];
     let viewsOpacity = [];
     for (let i = 0; i < this.props.children.length; ++i) {
-      viewsScale.push(new Animated.Value(i === this._currentPage ? 1 : this.props.blurredZoom));
-      viewsOpacity.push(new Animated.Value(i === this._currentPage ? 1 : this.props.blurredOpacity));
+      viewsScale.push(
+        new Animated.Value(i === this._currentPage ? 1 : this.props.blurredZoom)
+      );
+      viewsOpacity.push(
+        new Animated.Value(
+          i === this._currentPage ? 1 : this.props.blurredOpacity
+        )
+      );
     }
 
     this.setState({
@@ -162,32 +165,59 @@ export default class CarouselPager extends Component {
       onStartShouldSetPanResponder: (evt, gestureState) => {
         const dx = Math.abs(gestureState.dx);
         const dy = Math.abs(gestureState.dy);
-        return this.props.vertical ? (dy > this.props.deltaDelay && dy > dx) : (dx > this.props.deltaDelay && dx > dy);
+        return this.props.vertical
+          ? dy > this.props.deltaDelay && dy > dx
+          : dx > this.props.deltaDelay && dx > dy;
       },
       onStartShouldSetPanResponderCapture: (evt, gestureState) => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         // Set PanResponder only if it is a gesture in the right direction
         const dx = Math.abs(gestureState.dx);
         const dy = Math.abs(gestureState.dy);
-        return this.props.vertical ? (dy > this.props.deltaDelay && dy > dx) : (dx > this.props.deltaDelay && dx > dy);
+        return this.props.vertical
+          ? dy > this.props.deltaDelay && dy > dx
+          : dx > this.props.deltaDelay && dx > dy;
       },
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => false,
 
-      onPanResponderGrant: (evt, gestureState) => {
-      },
+      onPanResponderGrant: (evt, gestureState) => {},
       onPanResponderMove: (evt, gestureState) => {
-        let suffix = this.props.vertical ? 'y' : 'x';
-        this.state.pos.setValue(this._lastPos + gestureState['d' + suffix]);
+        let suffix = this.props.vertical ? "y" : "x";
+
+        //
+        if (this._currentPage === 0 && gestureState.y0 > gestureState.moveY) {
+          this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
+        } else if (
+          this._currentPage === 0 &&
+          gestureState.y0 < gestureState.moveY
+        ) {
+          this.props.onPullDown();
+        }
+
+        //
+        if (
+          this._currentPage === this.props.children.length - 1 &&
+          gestureState.y0 < gestureState.moveY
+        ) {
+          this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
+        } else if (
+          this._currentPage === this.props.children.length - 1 &&
+          gestureState.y0 > gestureState.moveY
+        ) {
+          this.props.onPullUp();
+        }
       },
       onPanResponderTerminationRequest: (evt, gestureState) => true,
       onPanResponderRelease: (evt, gestureState) => {
-        let suffix = this.props.vertical ? 'y' : 'x';
-        this._lastPos += gestureState['d' + suffix];
-        let page = this._getPageForOffset(this._lastPos, gestureState['d' + suffix]);
+        let suffix = this.props.vertical ? "y" : "x";
+        this._lastPos += gestureState["d" + suffix];
+        let page = this._getPageForOffset(
+          this._lastPos,
+          gestureState["d" + suffix]
+        );
         this.animateToPage(page);
       },
-      onPanResponderTerminate: (evt, gestureState) => {
-      },
+      onPanResponderTerminate: (evt, gestureState) => {},
       onShouldBlockNativeResponder: (evt, gestureState) => true
     });
   }
@@ -198,7 +228,14 @@ export default class CarouselPager extends Component {
       return (
         <View style={{ flex: 1 }}>
           <View
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent' }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "transparent"
+            }}
             onLayout={evt => {
               let width = evt.nativeEvent.layout.width;
               let height = evt.nativeEvent.layout.height;
@@ -216,19 +253,19 @@ export default class CarouselPager extends Component {
         top: this.state.pos,
         paddingTop: this.props.containerPadding,
         paddingBottom: this.props.containerPadding,
-        flexDirection: 'column'
-      }
+        flexDirection: "column"
+      };
       boxStyle = {
         height: this._boxSize,
         marginBottom: this.props.pageSpacing
-      }
+      };
     } else {
       containerStyle = {
         left: this.state.pos,
         paddingLeft: this.props.containerPadding,
         paddingRight: this.props.containerPadding,
-        flexDirection: 'row'
-      }
+        flexDirection: "row"
+      };
       boxStyle = {
         width: this._boxSize,
         marginRight: this.props.pageSpacing
@@ -236,7 +273,13 @@ export default class CarouselPager extends Component {
     }
 
     return (
-      <View style={{ flex: 1, flexDirection: this.props.vertical ? 'column' : 'row', overflow: 'hidden' }}>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: this.props.vertical ? "column" : "row",
+          overflow: "hidden"
+        }}
+      >
         <Animated.View
           style={[{ flex: 1 }, containerStyle]}
           {...this._panResponder.panHandlers}
@@ -245,16 +288,23 @@ export default class CarouselPager extends Component {
             return (
               <Animated.View
                 key={index}
-                style={[{
-                  opacity: this.state.viewsOpacity[index],
-                  transform: [
-                    this.props.vertical ? {
-                      scaleX: this.state.viewsScale[index]
-                    } : {
-                        scaleY: this.state.viewsScale[index]
-                      }
-                  ]
-                }, boxStyle, this.props.pageStyle]}>
+                style={[
+                  {
+                    opacity: this.state.viewsOpacity[index],
+                    transform: [
+                      this.props.vertical
+                        ? {
+                            scaleX: this.state.viewsScale[index]
+                          }
+                        : {
+                            scaleY: this.state.viewsScale[index]
+                          }
+                    ]
+                  },
+                  boxStyle,
+                  this.props.pageStyle
+                ]}
+              >
                 {page}
               </Animated.View>
             );

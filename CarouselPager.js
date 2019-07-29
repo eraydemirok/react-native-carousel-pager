@@ -192,10 +192,7 @@ export default class CarouselPager extends Component {
           gestureState.y0 < gestureState.moveY
         ) {
           this.props.onPullDown();
-        }
-
-        //
-        if (
+        } else if (
           this._currentPage === this.props.children.length - 1 &&
           gestureState.y0 < gestureState.moveY
         ) {
@@ -205,6 +202,8 @@ export default class CarouselPager extends Component {
           gestureState.y0 > gestureState.moveY
         ) {
           this.props.onPullUp();
+        } else {
+          this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
         }
       },
       onPanResponderTerminationRequest: (evt, gestureState) => true,

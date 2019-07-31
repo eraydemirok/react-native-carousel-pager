@@ -184,26 +184,23 @@ export default class CarouselPager extends Component {
       onPanResponderMove: (evt, gestureState) => {
         let suffix = this.props.vertical ? "y" : "x";
 
-        //
-        if (this._currentPage === 0 && gestureState.y0 > gestureState.moveY) {
-          this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
-        } else if (
-          this._currentPage === 0 &&
-          gestureState.y0 < gestureState.moveY
-        ) {
-          this.props.onPullDown();
-        } else if (
-          this._currentPage === this.props.children.length - 1 &&
-          gestureState.y0 < gestureState.moveY
-        ) {
-          this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
-        } else if (
-          this._currentPage === this.props.children.length - 1 &&
-          gestureState.y0 > gestureState.moveY
-        ) {
-          this.props.onPullUp();
+        if (this.props.children.length < 2) {
+          if (this._currentPage === 0 && gestureState.y0 < gestureState.moveY) {
+            this.props.onPullDown();
+          } else {
+            this.props.onPullUp();
+          }
         } else {
-          this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
+          if (this._currentPage === 0 && gestureState.y0 < gestureState.moveY) {
+            this.props.onPullDown();
+          } else if (
+            this._currentPage === this.props.children.length - 1 &&
+            gestureState.y0 > gestureState.moveY
+          ) {
+            this.props.onPullUp();
+          } else {
+            this.state.pos.setValue(this._lastPos + gestureState["d" + suffix]);
+          }
         }
       },
       onPanResponderTerminationRequest: (evt, gestureState) => true,
